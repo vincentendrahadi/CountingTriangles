@@ -2,7 +2,7 @@ import java.io.IOException;
 import java.util.StringTokenizer;
 import java.lang.Integer;
 import java.util.Iterator;
-
+import java.lang.Long;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -17,7 +17,7 @@ public class TriangleCounter {
 
 
   public static class PairMapper
-       extends Mapper<Object, Text, IntWritable, LongWritable>{
+       extends Mapper<Object, Text, LongWritable, LongWritable>{
   
     public void map(Object key, Text value, Context context) 
         throws IOException, InterruptedException {
@@ -25,13 +25,13 @@ public class TriangleCounter {
       String[] user_follower = value.toString().trim().split("\\s+");
       
       if (user_follower.length > 1) {
-        int userID = Integer.parseInt(user_follower[0]);
-        int followerID = Integer.parseInt(user_follower[1]);
+        Long userID = Long.parseLong(user_follower[0]);
+        Long followerID = Long.parseLong(user_follower[1]);
         
         if (userID < followerID) {
-          context.write(new IntWritable(userID), new LongWritable(followerID));
+          context.write(new LongWritable(userID), new LongWritable(followerID));
         } else {
-          context.write(new IntWritable(followerID), new LongWritable(userID));
+          context.write(new LongWritable(followerID), new LongWritable(userID));
         }
       }
     }
@@ -54,7 +54,9 @@ public class TriangleCounter {
       Text newKey = new Text();
       Text pairKey = new Text();
       String temp = "";
-      
+
+
+      // TODO : Generate all possible combinations
       while (itr.hasNext()) {
         counter++;
         String value = Long.toString(itr.next().get());
@@ -76,37 +78,43 @@ public class TriangleCounter {
   }
 
   public static class ComponentMapper
-      extends Mapper<Text, LongWritable, Text, LongWritable>{
+      extends Mapper<Object, Text, Text, LongWritable>{
   
-    public void map(Text key, LongWritable value, Context context) 
+    public void map(Object key, Text value, Context context) 
       throws IOException, InterruptedException {
-        context.write(key, value);
+
+        String[] key_value = value.toString().trim().split("\\s+");
+        if (key_value.length > 1) {
+          context.write(new Text(key_value[0]), new LongWritable(Long.parseLong(key_value[1])));
+        }
+        
     }
   }
 
   public static class TriangleReducer
     extends Reducer<Text, LongWritable, Text, LongWritable> {
+    
+    long count = 0;
+    boolean hasDollar = false;
 
-    public void reduce(LongWritable key, Iterable<LongWritable> values,
+    public void reduce(Text key, Iterable<LongWritable> values,
         Context context) throws IOException, InterruptedException {
 
       final Text RESULT_STRING = new Text("result");
-      boolean hasDollar = false;
-      long sum = 0;
       
       Iterator<LongWritable> itr = values.iterator();
       
       while (itr.hasNext()) {
         Long value = itr.next().get();
         if (value != -1) {
-          sum += value;
+          count += 1;
         } else {
           hasDollar = true;
         }
       }
 
       if (hasDollar) {
-        context.write(RESULT_STRING, new LongWritable(sum));
+        context.write(RESULT_STRING, new LongWritable(count));
       }
     }
   }
