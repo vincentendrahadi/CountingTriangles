@@ -14,45 +14,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class TriangleCounter {
-  
-  // public static class DuplicateMapper
-  //   extends Mapper<Object, Text, Text, LongWritable>{
-
-  //     public void map(Object key, Text value, Context context)
-  //       throws IOException, InterruptedException {
-
-  //         String[] user_follower = value.toString().trim().split("\\s+");
-
-  //         if (user_follower.length > 1) {
-  //           Long userID = Long.parseLong(user_follower[0]);
-  //           Long followerID = Long.parseLong(user_follower[1]);
-  //           Text key = new Text();
-  //           private final LongWritable dummy = new LongWritable(-1);
-
-  //           if (userID < followerID) {
-  //             key = user_follower[0] + "," + user_follower[1];
-  //           } else {
-  //             key = user_follower[1] + "," + user_follower[0];
-  //           }
-
-  //           context.write(key, dummy);
-  //         }
-  //       }
-  //   }
-
-  // public static class DuplicateReducer
-  //   extends Reducer<Text, LongWritable, LongWritable, LongWritable> {
-
-  //     public void reduce(Text key, Iterable<LongWritable> values,
-  //       Context context) throws IOException, InterruptedException {
-  //         String[] nodes = key.toString().trim().split(",");
-
-  //         LongWritable key = new LongWritable(Long.parseLong(nodes[0]));
-  //         LongWritable value = new LongWritable(Long.parseLong(nodes[1]));
-
-  //         context.write(key, value);
-  //       }
-  //   }
 
   public static class PairMapper
        extends Mapper<Object, Text, LongWritable, LongWritable>{
@@ -89,7 +50,6 @@ public class TriangleCounter {
       Text newKey = new Text();
       Set<Long> set = new LinkedHashSet<>();
       while (itr.hasNext()) {
-        // context.write(new Text(key.toString()), new LongWritable(itr.next().get()));
         set.add(itr.next().get());
       }
       ArrayList<Long> arrayList = new ArrayList<>();
@@ -111,10 +71,11 @@ public class TriangleCounter {
         for (int j = i + 1; j < arrayList.size(); j++) {
           Long value2 = arrayList.get(j);
           String strValue2 = value2.toString();
+
           // Emit triad from read key value pair
           newKey.set(strValue1 + "," + strValue2);
+
           int compare = value1.compareTo(value2);
-          // context.write(newKey, new LongWritable());
           if (compare < 0) {
             newKey.set(strValue1 + "," + strValue2);
             context.write(newKey, key);
@@ -189,9 +150,6 @@ public class TriangleCounter {
         
     }
   }
-
-
-
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "Triangle Component Generator");
